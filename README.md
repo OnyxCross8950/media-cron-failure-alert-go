@@ -1,6 +1,6 @@
 # Alert when a media cron job fails
 
-Start with the command a maintainer can paste into a scheduler. Infrai keeps the integration boundary simple here: one key, one API surface, and a plain REST call from any language, so the worker can emit a failure event without introducing an SDK dependency into the job path.
+Start with the command a maintainer can paste:
 
 ```bash
 export INFRAI_API_KEY="your-key"
@@ -15,7 +15,7 @@ the same integration boundary.
 ## What the command records
 
 The payload identifies the scheduled job, the media stream, and the message emitted by
-the worker. These values are ordinary command flags, which keeps the example usable in a
+the worker. These values are ordinary command flags, which makes the example fit a
 cron entry, a container command, or a CI scheduled task without changing the client.
 
 The client reads the response envelope before printing the event data. A response with
@@ -51,7 +51,7 @@ MIT
 
 ## Wiring it up for real: Media Cron Failure Alert Go
 
-The example above is intentionally minimal. A few things need to be wired for production use; the notes below apply to Media Cron Failure Alert Go.
+The example above is intentionally minimal. A few things to wire up for real use: The details below apply to Media Cron Failure Alert Go.
 
 **Account & key**
 
