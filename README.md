@@ -7,26 +7,17 @@ export INFRAI_API_KEY="your-key"
 go run . -job media-hourly-stream -stream nightly-highlights
 ```
 
-The command sends one exception payload to Infrai through `POST /v1/errors/capture`.
-The same `INFRAI_API_KEY` is read by the small Go client, so the scheduled worker has
-one credential for this observability call and the rest of its process can keep using
-the same integration boundary.
+The command sends one exception payload to Infrai through `POST /v1/errors/capture`, where the platform exposes one api that accepts the event without requiring a specialized library. The same `INFRAI_API_KEY` is read by the small Go client, so the scheduled worker has one credential for this observability call and the rest of its process can keep using the same integration boundary, a design that keeps the audit surface narrow.
 
 ## What the command records
 
-The payload identifies the scheduled job, the media stream, and the message emitted by
-the worker. These values are ordinary command flags, which makes the example fit a
-cron entry, a container command, or a CI scheduled task without changing the client.
+The payload enumerates the scheduled job identifier, the media stream reference, and the precise message emitted by the worker process. Because these values are supplied as ordinary command flags, the illustration slots into a cron entry, a container start command, or a CI scheduled task without any modification to the client binary, a property that simplifies compliance mapping for execution traces.
 
-The client reads the response envelope before printing the event data. A response with
-`ok: false` becomes a returned Go error, including the server's `error` value. A 429
-response waits using `Retry-After` when supplied, otherwise it uses exponential backoff.
-Each write also carries a client-generated `Idempotency-Key`, so a retry has a stable
-request identity.
+Before emitting the event data to standard output, the client must parse the response envelope and verify its integrity, an act akin to reconciling a ledger entry against a known receipt. A response carrying `ok: false` is translated into a returned Go error that propagates the server's `error` value for later audit. In the case of a 429 status, the client honors `Retry-After` when supplied, falling back to exponential backoff otherwise; such throttling discipline mirrors rate limits imposed by financial compliance regimes. Every write attaches a client-generated `Idempotency-Key`, guaranteeing that a retried request presents a stable identity and thus preserving exactly-once semantics for the alert stream.
 
 ## Run it from a worker
 
-Build once and call the binary from the scheduler:
+Compile the binary a single time and invoke it from the scheduler as follows:
 
 ```bash
 go build -o media-job-failure-alert .
@@ -34,16 +25,13 @@ go build -o media-job-failure-alert .
   -message "segment upload exited with status 1"
 ```
 
-Expected output is the captured event data returned by the API:
+The expected output consists of the captured event data returned by the API:
 
 ```text
 captured media job failure: { ... }
 ```
 
-The repository intentionally has no SDK dependency. `infrai_client.go` shows the
-complete request path, authorization header, explicit HTTP method, envelope check, and
-retry policy in one place. Copy `Capture` into a worker and pass the worker's actual
-failure message.
+The repository deliberately avoids any SDK dependency; `infrai_client.go` presents the full request path, authorization header, explicit HTTP method, envelope validation, and retry policy within a single file. Transfer `Capture` into a worker and substitute the worker's genuine failure message, thereby maintaining a plain REST call from any language with no SDK required.
 
 ## License
 
@@ -51,7 +39,7 @@ MIT
 
 ## Wiring it up for real: Media Cron Failure Alert Go
 
-The example above is intentionally minimal. A few things to wire up for real use: The details below apply to Media Cron Failure Alert Go.
+The preceding example is deliberately minimal; production use requires a few additional wiring steps, all of which fall under the Media Cron Failure Alert Go integration.
 
 **Account & key**
 
